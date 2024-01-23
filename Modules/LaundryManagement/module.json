@@ -1,0 +1,13 @@
+{
+    "name": "LaundryManagement",
+    "alias": "laundrymanagement",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\LaundryManagement\\Providers\\LaundryManagementServiceProvider"
+    ],
+    "aliases": {},
+    "files": [],
+    "requires": []
+}

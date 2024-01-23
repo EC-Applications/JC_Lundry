@@ -1,0 +1,34 @@
+.barcode_code {
+    display: block;
+    font-weight: bold;
+}
+
+.barcodea4 .item {
+    display: block;
+    overflow: hidden;
+    text-align: center;
+    border: 1px dotted #CCC;
+    font-size: 15px;
+    line-height: 35px;
+    text-transform: uppercase;
+    float: left;
+    margin-right: 5px;
+    margin-bottom: 8px;
+}
+.barcodea4 .style24 {
+    width: 4.48in;
+    /* height: 1.335in; */
+    margin-left: 0.079in;
+    padding-top: 0.05in;
+}
+
+.barcode_image {
+    display: block;
+}
+
+.barcode_code {
+    display: block;
+    font-weight: bold;
+    margin-left: 20px;
+}
+

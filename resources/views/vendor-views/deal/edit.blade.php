@@ -1,0 +1,289 @@
+@extends('layouts.vendor.app')
+
+@section('title',trans('messages.edit_deal'))
+
+@push('css_or_js')
+    <link href="{{asset('public/assets/admin/css/tags-input.min.css')}}" rel="stylesheet">
+    <style>
+        .close-icon{
+            right: 10px;
+            top: 10px;
+        }
+    </style>
+@endpush
+
+@section('content')
+    <div class="content container-fluid">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col-sm mb-2 mb-sm-0">
+                    <h1 class="page-header-title text-capitalize"><i class="tio-add-circle-outlined"></i> {{__('messages.add_new_deal')}}</h1>
+                </div>
+            </div>
+        </div>
+        <!-- End Page Header -->
+        <div class="row gx-2 gx-lg-3">
+            <div class="col-sm-12 col-lg-12 mb-3 mb-lg-2">
+                <form action="javascript:" method="post" id="deal_form"
+                      enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+                    <div class="form-group">
+                        <label class="input-label" for="title">{{__('messages.title')}}</label>
+                        <input type="text" name="title" class="form-control" placeholder="{{__('messages.deal_title')}}"  maxlength="191" value="{{$deal->title}}" required>                        
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-4 col-6">
+                            <div class="form-group">
+                                <label class="input-label" for="exampleFormControlInput1">{{__('messages.price')}}</label>
+                                <input type="number" min=".01" max="9999999999" step="0.01" name="price" class="form-control" value="{{$deal->price}}" placeholder="Ex : 100" required>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-4 col-6">
+                            <div class="form-group">
+                                <label class="input-label" for="title">{{__('messages.start')}} {{__('messages.date')}}</label>
+                                <input type="datetime-local" id="date_from" class="form-control" name="start_date" value="{{$deal->start_at}}" required> 
+                            </div>
+                        </div>
+                  
+                        <div class="col-sm-4 col-6">
+                            <div class="form-group">
+                                <label class="input-label" for="title">{{__('messages.end')}} {{__('messages.date')}}</label>
+                                <input type="datetime-local" id="date_to" class="form-control" name="end_date" value="{{$deal->end_at}}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label class="input-label" for="exampleFormControlInput1">{{__('messages.short')}} {{__('messages.description')}}</label>
+                                <textarea type="text" name="description" class="form-control" rows="10">{!! $deal->short_description !!}</textarea>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label>{{__('messages.food')}} {{__('messages.image')}}</label><small style="color: red">* ( {{__('messages.ratio')}} 1:1 )</small>
+                                <div class="custom-file">
+                                    <input type="file" name="image" id="customFileEg1" class="custom-file-input"
+                                           accept=".jpg, .png, .jpeg, .gif, .bmp, .tif, .tiff|image/*">
+                                    <label class="custom-file-label" for="customFileEg1">{{__('messages.choose')}} {{__('messages.file')}}</label>
+                                </div>
+        
+                                <center id="image-viewer-section" class="pt-2">
+                                    <img style="height: 200px;border: 1px solid; border-radius: 10px;" id="viewer"
+                                         src="{{asset('storage/app/public/deal/'.$deal->image)}}" 
+                                         onerror="this.src='{{asset('public/assets/admin/img/400x400/img2.jpg')}}'"
+                                         alt="banner image"/>
+                                </center>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row p-4 border rounded">
+                        <div class="h3">{{trans('messages.choice_list')}}</div>
+                        <div class="col-12" id="choice_options">
+                            @foreach ($deal->options as $key=>$option)
+                                <div class="p-3 border rounded row mb-2">
+                                    <span class="position-absolute folat-right text-danger cursor-pointer font-weight-bold close-icon" title="{{trans('messages.remove_this_choice')}}" onclick="removeChoice(this)"><i class="tio-clear"></i></span>
+                                    <div class="col-sm-6 col-12">
+                                        <div class="form-group">
+                                            <label class="input-label" for="">{{__('messages.choice')}} {{__('messages.title')}}</label>
+                                            <input type="text" name="choice[{{$key}}][title]" class="form-control" value="{{$option['title']}}" required>
+                                        </div> 
+                                        <div class="h5 border_bottom">{{trans('messages.options')}}</div>
+                                        <ul class="list-group" id="choice_{{$key}}">
+                                            @foreach ($option['items'] as $k=>$item)
+                                                <li class="list-group-item">
+                                                    {{$item['name']}}
+                                                    <input type="hidden" name="choice[{{$key}}][items][{{$k}}][id]" value="{{$item['id']}}">
+                                                    <input type="hidden" name="choice[{{$key}}][items][{{$k}}][name]" value="{{$item['name']}}">
+                                                </li>
+                                            @endforeach
+                                            @if (!count($option['items']))
+                                                <li class="list-group-item text-center text-danger">{{trans('messages.no_options_warning')}}</li>
+                                            @endif
+                                        </ul>                                    
+                                    </div>
+                                    @php($food_ids = array_column($option['items'], 'id'))
+                                    <div class="col-sm-6 col-12">
+                                        <div class="form-group">
+                                            <label class="input-label" for="">{{__('messages.select')}} {{__('messages.food')}}</label>
+                                            <select class="form-control js-select2-custom choice_item" multiple="multiple" onchange="updateOptions(this, '{{$key}}')" required>
+                                                @foreach ($foods as $food)
+                                                    <option value="{{$food['id']}}" {{in_array($food['id'], $food_ids) ? 'selected' : ''}}>{{$food['text']}}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>   
+                                        @php($addon_ids = isset( $option['addon_ids']) ? $option['addon_ids'] : [])
+                                        <div class="form-group">
+                                            <label class="input-label" for="exampleFormControlSelect1">{{__('messages.addon')}}<span
+                                                    class="input-label-secondary" title="{{__('messages.restaurant_required_warning')}}"><img src="{{asset('/public/assets/admin/img/info-circle.svg')}}" alt="{{__('messages.restaurant_required_warning')}}"></span></label>
+                                            <select name="choice[{{$key}}][addon_ids][]" class="form-control js-select2-custom add_on" multiple="multiple">
+                                                @foreach ($addons as $addon)
+                                                    <option value="{{$addon['id']}}" {{in_array($addon['id'], $addon_ids) ? 'selected' : ''}}>{{$addon['text']}}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>                                      
+                                    </div>
+                                </div>                                
+                            @endforeach                            
+
+                        </div>
+                        <div class="col-12 text-right">
+                            <button class="btn btn-secondary" type="button" onclick="addChoice()"><i class="tio-add-circle-outlined mr-2"></i>{{trans('messages.add_choice')}}</button>
+                        </div>
+                    </div>
+                    <hr>
+                    <button type="submit" class="btn btn-primary">{{__('messages.submit')}}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+@endsection
+
+@push('script_2')
+    <script src="{{asset('public/assets/admin')}}/js/tags-input.min.js"></script>
+    <script>
+        <?php 
+            $item_options = '';
+            $addon_options = '';
+            foreach($foods as $food){
+                $item_options .= '<option value="'.$food['id'].'">'.$food['text'].'</option>';
+            }
+            foreach($addons as $addon){
+                $addon_options .= '<option value="'.$addon['id'].'">'.$addon['text'].'</option>';
+            }
+        ?>
+
+        var item_list = '{!! $item_options !!}';
+        var addon_list = '{!! $addon_options !!}';
+        var choise_count = {{count($deal->options)}};
+
+        function readURL(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    $('#viewer').attr('src', e.target.result);
+                }
+
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function updateOptions(e, tergat) {
+            let data = $(e).select2('data');
+            let target = $('#choice_'+tergat);
+            target.empty();
+            if(data.length == 0) {
+                target.append('<li class="list-group-item text-center text-danger">{{trans('messages.no_options_warning')}}</li>');
+            } else {
+                data.forEach((element, index) => {
+                    target.append('<li class="list-group-item">'+element.text+'<input type="hidden" name="choice['+tergat+'][items]['+index+'][id]" value="'+element.id+'"><input type="hidden" name="choice['+tergat+'][items]['+index+'][name]" value="'+element.text+'"></li>');
+                    console.log('id='+element.id,' text='+element.text, ' index='+index);
+                });                
+            }
+        }
+
+        function addChoice()
+        {
+            if(!item_list){
+                toastr.error('{{trans('messages.please_select_restaurant')}}', Error, {
+                    CloseButton: true,
+                    ProgressBar: true
+                });
+                return;
+            }
+            addon_list = addon_list?addon_list:''
+            let text = `<div class="p-3 border rounded row mb-2 position-relative">
+                <span class="position-absolute folat-right text-danger cursor-pointer font-weight-bold close-icon" title="{{trans('messages.remove_this_choice')}}" onclick="removeChoice(this)"><i class="tio-clear"></i></span>
+                <div class="col-sm-6 col-12">
+                    <div class="form-group">
+                        <label class="input-label" for="">{{__('messages.choice')}} {{__('messages.title')}}</label>
+                        <input type="text" name="choice[`+choise_count+`][title]" class="form-control" required>
+                    </div> 
+                    <div class="h5 border_bottom">{{trans('messages.options')}}</div>
+                    <ul class="list-group" id="choice_`+choise_count+`">
+                        <li class="list-group-item text-center text-danger">{{trans('messages.no_options_warning')}}</li>
+                    </ul>                                    
+                </div>
+                <div class="col-sm-6 col-12">
+                    <div class="form-group">
+                        <label class="input-label" for="">{{__('messages.select')}} {{__('messages.food')}}</label>
+                        <select class="form-control js-select2-custom choice_item" multiple="multiple" onchange="updateOptions(this, '`+choise_count+`')" required>
+                            `+item_list+`
+                        </select>
+                    </div>   
+                    <div class="form-group">
+                        <label class="input-label" for="exampleFormControlSelect1">{{__('messages.addon')}}<span
+                                class="input-label-secondary" title="{{__('messages.restaurant_required_warning')}}"><img src="{{asset('/public/assets/admin/img/info-circle.svg')}}" alt="{{__('messages.restaurant_required_warning')}}"></span></label>
+                        <select name="choice[`+choise_count+`][addon_ids][]" class="form-control js-select2-custom add_on" multiple="multiple">
+                            `+addon_list+`
+                        </select>
+                    </div>                                      
+                </div>
+            </div>`;
+
+            $('#choice_options').append(text);
+            $('.js-select2-custom').each(function () {
+                var select2 = $.HSCore.components.HSSelect2.init($(this));
+            });
+            // $('.js-select2-custom').select2();
+            choise_count++;
+        }
+
+        function removeChoice(element){
+            element.parentNode.remove();
+        }
+
+        $("#customFileEg1").change(function () {
+            readURL(this);
+        });
+
+
+        $(document).ready(function(){
+            $('#date_from').attr('min',(new Date()).toISOString().split('T')[0]);
+            $('#date_to').attr('min',(new Date()).toISOString().split('T')[0]);
+            $('.js-select2-custom').each(function () {
+                var select2 = $.HSCore.components.HSSelect2.init($(this));
+            }); 
+        });
+
+        $('#deal_form').on('submit', function () {
+            var formData = new FormData(this);
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+            $.post({
+                url: "{{route('vendor.deals.update',['deal'=>$deal->id])}}",
+                data: formData,
+                cache: false,
+                contentType: false,
+                processData: false,
+                success: function (data) {
+                    if (data.errors) {
+                        for (var i = 0; i < data.errors.length; i++) {
+                            toastr.error(data.errors[i].message, {
+                                CloseButton: true,
+                                ProgressBar: true
+                            });
+                        }
+                    } else {
+                        toastr.success('Deal updated successfully!', {
+                            CloseButton: true,
+                            ProgressBar: true
+                        });
+                        setTimeout(function () {
+                            location.href = '{{route('vendor.deals.index')}}';
+                        }, 2000);
+                    }
+                }
+            });
+        });
+    </script>
+@endpush
